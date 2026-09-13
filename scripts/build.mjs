@@ -1,0 +1,22 @@
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+
+const root = resolve(import.meta.dirname, "..");
+const dist = resolve(root, "dist");
+await rm(dist, { recursive: true, force: true });
+await mkdir(dist, { recursive: true });
+
+for (const path of ["manifest.json", "src"]) {
+  await cp(resolve(root, path), resolve(dist, path), { recursive: true });
+}
+
+const manifest = JSON.parse(await readFile(resolve(dist, "manifest.json"), "utf8"));
+if (manifest.manifest_version !== 3) throw new Error("Expected Manifest V3.");
+
+await mkdir(resolve(dist, "meta"), { recursive: true });
+await writeFile(
+  resolve(dist, "meta/build.json"),
+  JSON.stringify({ name: manifest.name, version: manifest.version, builtAt: new Date().toISOString() }, null, 2) + "\n",
+);
+
+console.log(`Built ${manifest.name} ${manifest.version} into dist/`);

@@ -1,0 +1,6 @@
+:root { font: 13px/1.4 system-ui, sans-serif; color-scheme: light dark; }
+body { width: 320px; margin: 0; }
+main { padding: 14px; }
+p { overflow-wrap: anywhere; }
+button { margin: 4px 6px 0 0; padding: 6px 10px; }
+code { font-size: 12px; }
