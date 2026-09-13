@@ -1,19 +1,10 @@
 # ChatgptGoal
 
-A Manifest V3 Chrome extension that adds a Codex-like `/goal` loop to the ChatGPT web UI.
+Chrome Manifest V3 extension adding a `/goal ...` feedback loop to ChatGPT's rendered conversation. Version 0.2 replaces the original unverified DOM assumptions using an audit of the supplied 2026-09-13 lecture capture. See [the audit and evidence map](docs/capture-audit.md).
 
-## How it works
+## Install
 
-1. Send a normal ChatGPT message that starts with `/goal`, for example `/goal Implement the requested feature and verify it with tests`.
-2. The content script records the objective and watches the ChatGPT DOM with `MutationObserver`.
-3. When generation appears to have finished, the extension sends the objective, recent transcript, and latest assistant response to a small evaluator model using the API key configured in extension settings.
-4. The evaluator returns `{ complete, reason, missing, confidence }`.
-5. If complete, the loop stops. Otherwise ChatgptGoal inserts a continuation message describing what is missing and clicks ChatGPT's Send button.
-6. The loop repeats until completion, pause/clear, an error, or the configured iteration cap.
-
-The API key stays in the extension background/service-worker context and is never injected into the ChatGPT page.
-
-## Install locally
+Requires Node 22+ and Chrome/Chromium 114+.
 
 ```sh
 npm ci
@@ -21,38 +12,38 @@ npm test
 npm run build
 ```
 
-Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `dist/`. Open the extension settings and configure the evaluator API key/model.
+Load `dist/` through **chrome://extensions**, Developer mode, **Load unpacked**. Open extension settings, select an evaluator endpoint/model supporting strict JSON Schema, and enter your own API key. The default is `https://api.openai.com/v1/responses` with `gpt-5-mini`; compatible `/v1/chat/completions` endpoints are also supported. Custom HTTPS origins require an explicit host-permission grant. API charges are separate from ChatGPT subscription usage.
 
-The default evaluator endpoint is `https://api.openai.com/v1/responses`. A `/v1/chat/completions`-style endpoint is also supported. Custom HTTPS origins request an optional Chrome host permission when settings are saved.
+Send `/goal Finish the requested feature and verify it with tests` in the normal chat composer. The extension arms the goal only after observing that exact submitted user turn. It waits for a finalized **latest** assistant turn and stable content, submits goal-scoped observed history to the evaluator, then inserts and submits a continuation if more work is needed. It counts a continuation only after a new user message confirms submission. The popup shows status, errors, acknowledged sends, Pause, Resume and Clear.
 
-## Current ChatGPT DOM assumptions
+## Controls and limits
 
-The real ChatGPT site is intentionally isolated behind `src/content/dom-adapter.js`. The current skeleton uses conservative selectors such as:
+A goal belongs to one tab and one `/c/<conversation>` identity. Opening another chat cannot reuse its goal. Normal Chat, Work, image output and embedded file cards have distinct DOM cases. User Stop, manual messages, drafts, pending attachments, dialogs and navigation prevent automated sends. An in-flight API result cannot undo Pause or Clear. Requests time out after 25 seconds; API errors pause rather than retry automatically. The default cap is **12 acknowledged continuations**, not 12 evaluator calls.
 
-- composer: `#prompt-textarea`
-- send button: `button[data-testid="send-button"]`
-- stop button: `button[data-testid="stop-button"]`
-- messages: `[data-message-author-role]`
+Goal/history state uses `chrome.storage.session`: it survives service-worker suspension and page reload in the same browser session, but not browser restart or extension reload/update. Closing the tab removes its state. Unknown send outcomes after reload require manual review rather than automatic resubmission. Old 0.1 goals are not migrated. Resume is for `paused`; a `needs_review` or `blocked` goal must be reviewed and cleared/replaced.
 
-If ChatGPT changes its DOM, update only that adapter. The fallback deliberately returns no transcript rather than guessing message authorship.
+## What is and is not verified
 
-## Safety / loop controls
+The judge sees observed text and image/file **metadata**, not image pixels, downloaded file contents, or proof of external side effects. Image-only responses and missing/oversized history stop for review. File names are not treated as inspected contents. A judge may still make mistakes; this is not an independent verifier of arbitrary outcomes.
 
-- Goals are isolated per browser tab.
-- A response fingerprint prevents evaluating the same assistant response twice.
-- The popup supports pause, resume, and clear.
-- `maxIterations` defaults to 12 to prevent accidental infinite loops/API spend.
-- The evaluator is instructed to treat placeholders, deferred work, and unverified promises as incomplete.
-- Closing a tab deletes its stored goal state.
+The DOM terminal marker is a conservative heuristic validated against the supplied snapshots, not a public ChatGPT contract. Missing markers make the extension wait. The capture does not establish that every future ChatGPT version works. Temporary/no-ID conversations, voice, external file viewers and unknown UI variants are not supported. Close editors/dialogs before allowing automatic continuation. Keep the tab open; background throttling may delay checks.
 
-## Tests
+The extension does **not** replay internal ChatGPT endpoints, extract cookies/tokens, patch fetch/WebSocket, circumvent limits, or bypass refusals/permission requests. Only normal composer interaction is automated. The separate evaluator uses the public API. Review the service's current usage rules before enabling automation.
 
-Unit tests use Node's built-in test runner and cover command parsing, state transitions, iteration limits, transcript truncation, fingerprinting, evaluator JSON parsing, and both supported API response shapes. No runtime dependency is required.
+## Privacy
 
-## CI
+Your goal and observed conversation since the goal are sent to the evaluator endpoint you configure. Do not use it with information that provider should not receive. API settings are stored locally **without encryption**, restricted to trusted extension contexts with `setAccessLevel`; they are never sent to content scripts or injected into the page. The public repository contains only sanitized structural projections from the private capture, no HAR, session cookies, signed URLs, downloaded personal files, or unrelated chats.
 
-`.github/workflows/ci.yml` runs on pushes and pull requests, executes checks/tests/build, and uploads `dist/` as the `chatgpt-goal-extension` artifact.
+## Tests and CI
 
-## Known MVP limitations
+```sh
+python -m pip install -r tests/browser/requirements.txt
+python -m playwright install chromium
+npm run ci
+```
 
-This repository does not yet include browser-level integration tests against the live ChatGPT UI. Completion detection is based on DOM stability plus the disappearance of the Stop button, so the DOM adapter should be validated against the live site before treating it as production-ready. Tab-scoped goals survive reloads in the same tab but are intentionally cleared when the tab closes.
+Node unit tests exercise the state machine, API wire formats, strict verdict validation, budgets, per-tab isolation, races, cancellation and acknowledgement. Playwright runs real Chromium against 27 sanitized capture states and simulated editor/transport boundaries; no live ChatGPT session, paid evaluator or credentials are required. Browser tests also exercise the actual controller, goal service and DOM together. A logical URL is injected in offline tests rather than navigating to ChatGPT. `CHROMIUM_PATH` can select an installed Chromium binary. Fixtures are gzip JSON to reduce repetitive HTML size.
+
+GitHub Actions installs Chromium, runs syntax/manifest checks, unit tests, build, browser tests, native MV3 registration/options smoke test and uploads the installable `dist/` artifact only after all pass. `src/content/dom-adapter.js` handles DOM; `controller.js` owns the loop; `background/goal-service.js` owns state/concurrency; `evaluator.js` owns public API validation; `service-worker.js` and `content-script.js` are thin entry points. Runtime dependencies: none.
+
+GPL-3.0-only; see LICENSE. No warranty.

@@ -35,14 +35,14 @@ form.addEventListener("submit", async (event) => {
   event.preventDefault();
   status.textContent = "Saving…";
   try {
-    const apiEndpoint = endpoint.value.trim();
+    const apiEndpoint = ChatgptGoalEvaluator.validateEndpoint(endpoint.value.trim());
     const granted = await ensureEndpointPermission(apiEndpoint);
     if (!granted) throw new Error("Host permission was not granted.");
     const settings = {
       apiKey: apiKey.value.trim(),
       apiEndpoint,
       model: model.value.trim(),
-      maxIterations: Math.max(1, Math.min(100, Number(maxIterations.value) || 12)),
+      maxIterations: Math.max(1, Math.min(100, Math.floor(Number(maxIterations.value)) || 12)),
     };
     await chrome.storage.local.set({ [SETTINGS_KEY]: settings });
     status.textContent = "Saved.";

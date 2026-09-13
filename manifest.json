@@ -1,24 +1,33 @@
 {
   "manifest_version": 3,
   "name": "ChatgptGoal",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Adds a Codex-like /goal loop to ChatGPT and verifies completion with a small API model.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
     "https://api.openai.com/*"
   ],
-  "optional_host_permissions": ["https://*/*"],
+  "optional_host_permissions": [
+    "https://*/*"
+  ],
   "background": {
     "service_worker": "src/background/service-worker.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
       "js": [
         "src/shared/goal-core.js",
         "src/content/dom-adapter.js",
+        "src/content/controller.js",
         "src/content/content-script.js"
       ],
       "run_at": "document_idle"
@@ -31,5 +40,6 @@
   "action": {
     "default_title": "ChatgptGoal",
     "default_popup": "src/popup/popup.html"
-  }
+  },
+  "minimum_chrome_version": "114"
 }
