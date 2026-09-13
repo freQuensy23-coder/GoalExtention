@@ -1,6 +1,6 @@
 # ChatgptGoal
 
-Chrome Manifest V3 extension adding a `/goal ...` feedback loop to ChatGPT's rendered conversation. Version 0.2 replaces the original unverified DOM assumptions using an audit of the supplied 2026-09-13 lecture capture. See [the audit and evidence map](docs/capture-audit.md).
+Chrome Manifest V3 extension adding a `/goal ...` feedback loop to ChatGPT's rendered conversation. Version 0.2 replaces the original unverified DOM assumptions using an audit of the supplied 2026-09-13 lecture capture. See [the audit and evidence map](docs/capture-audit.md) and the [public sanitized capture corpus](docs/public-capture/README.md).
 
 ## Install
 
@@ -32,7 +32,9 @@ The extension does **not** replay internal ChatGPT endpoints, extract cookies/to
 
 ## Privacy
 
-Your goal and observed conversation since the goal are sent to the evaluator endpoint you configure. Do not use it with information that provider should not receive. API settings are stored locally **without encryption**, restricted to trusted extension contexts with `setAccessLevel`; they are never sent to content scripts or injected into the page. The public repository contains only sanitized structural projections from the private capture, no HAR, session cookies, signed URLs, downloaded personal files, or unrelated chats.
+Your goal and observed conversation since the goal are sent to the evaluator endpoint you configure. Do not use it with information that provider should not receive. API settings are stored locally **without encryption**, restricted to trusted extension contexts with `setAccessLevel`; they are never sent to content scripts or injected into the page.
+
+The private lecture capture is not published. The repository contains an allowlist-only public corpus: 27 minimized DOM states plus normalized HTTP/SSE/WebSocket structures. Raw HAR/CDP logs, cookies, tokens, signed links, saved conversations, screenshots, MHTML and personal artifact contents are excluded. CI runs a dedicated privacy audit over every public capture fixture.
 
 ## Tests and CI
 
@@ -42,8 +44,10 @@ python -m playwright install chromium
 npm run ci
 ```
 
-Node unit tests exercise the state machine, API wire formats, strict verdict validation, budgets, per-tab isolation, races, cancellation and acknowledgement. Playwright runs real Chromium against 27 sanitized capture states and simulated editor/transport boundaries; no live ChatGPT session, paid evaluator or credentials are required. Browser tests also exercise the actual controller, goal service and DOM together. A logical URL is injected in offline tests rather than navigating to ChatGPT. `CHROMIUM_PATH` can select an installed Chromium binary. Fixtures are gzip JSON to reduce repetitive HTML size.
+Node tests exercise the state machine, API wire formats, strict verdict validation, budgets, per-tab isolation, races, cancellation, acknowledgement, and the sanitized capture corpus. Playwright runs real Chromium against 27 sanitized capture states and simulated editor/transport boundaries; no live ChatGPT session, paid evaluator or credentials are required. Browser tests also exercise the actual controller, goal service and DOM together. A logical URL is injected in offline tests rather than navigating to ChatGPT.
 
-GitHub Actions installs Chromium, runs syntax/manifest checks, unit tests, build, browser tests, native MV3 registration/options smoke test and uploads the installable `dist/` artifact only after all pass. `src/content/dom-adapter.js` handles DOM; `controller.js` owns the loop; `background/goal-service.js` owns state/concurrency; `evaluator.js` owns public API validation; `service-worker.js` and `content-script.js` are thin entry points. Runtime dependencies: none.
+CI additionally loads the built extension as a real unpacked MV3 extension in full Chromium. One smoke test verifies worker registration/storage/options; a second routes a synthetic page at a logical `chatgpt.com/c/...` URL and runs the native `/goal -> evaluator -> automatic continuation -> complete` loop across the real content-script/service-worker boundary with a deterministic in-worker evaluator. No live ChatGPT or evaluator network request is made.
+
+GitHub Actions installs Chromium, runs syntax/manifest checks, the privacy gate, unit/corpus tests, build, browser regressions, both native MV3 smoke tests, and uploads the installable `dist/` artifact only after all pass. `src/content/dom-adapter.js` handles DOM; `controller.js` owns the loop; `background/goal-service.js` owns state/concurrency; `evaluator.js` owns public API validation; `service-worker.js` and `content-script.js` are thin entry points. Runtime dependencies: none.
 
 GPL-3.0-only; see LICENSE. No warranty.

@@ -1,0 +1,32 @@
+[
+  {
+    "bytes": 2303,
+    "path": "endpoints.json",
+    "sha256": "8d6d18ccf4e98b072c1a427c9c3ff380e2596eb74c1e316fe15eecd87843ee12"
+  },
+  {
+    "bytes": 5319,
+    "path": "http-shapes.json",
+    "sha256": "6df0508de7c57e670e9bd16bea37ff6494ce187376f46716dcba22151cae30de"
+  },
+  {
+    "bytes": 2608,
+    "path": "provenance.json",
+    "sha256": "6ba630b1f6b4e9134aa7805286cce3598a92ed11cb53705763b40d33e87014dc"
+  },
+  {
+    "bytes": 2031,
+    "path": "states.json.gz",
+    "sha256": "b08248f178b445071a53b4e3c75e92a687b823110563e92f45a2da8ef8caca15"
+  },
+  {
+    "bytes": 3325,
+    "path": "stream-semantics.json",
+    "sha256": "7aca7762d4e291b0ce186260ab3e43f1193914bf303c14026839d74b4587541d"
+  },
+  {
+    "bytes": 2481,
+    "path": "websocket-semantics.json",
+    "sha256": "d8297091934884d5ebce66cd107d8bdbb47247f64380e3b86639ac7f9ad47639"
+  }
+]

@@ -1,0 +1,106 @@
+[
+  {
+    "host": "chatgpt.com",
+    "method": "GET",
+    "mime_type": "application/json",
+    "observed": 6,
+    "path": "/backend-api/celsius/ws/user",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "GET",
+    "mime_type": "application/json",
+    "observed": 22,
+    "path": "/backend-api/conversations",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "GET",
+    "mime_type": null,
+    "observed": 1,
+    "path": "/backend-api/conversations/<conversation_id>",
+    "status": 0
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "GET",
+    "mime_type": "application/json",
+    "observed": 7,
+    "path": "/backend-api/conversations/<conversation_id>",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "GET",
+    "mime_type": "application/json",
+    "observed": 4,
+    "path": "/backend-api/files/<file_id>/simple",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "GET",
+    "mime_type": "application/json",
+    "observed": 9,
+    "path": "/backend-api/files/download/<file_id>",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "POST",
+    "mime_type": "application/json",
+    "observed": 9,
+    "path": "/backend-api/conversation/init",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "POST",
+    "mime_type": null,
+    "observed": 1,
+    "path": "/backend-api/f/conversation",
+    "status": 0
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "POST",
+    "mime_type": "text/event-stream",
+    "observed": 6,
+    "path": "/backend-api/f/conversation",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "POST",
+    "mime_type": null,
+    "observed": 1,
+    "path": "/backend-api/f/conversation/prepare",
+    "status": 0
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "POST",
+    "mime_type": "application/json",
+    "observed": 26,
+    "path": "/backend-api/f/conversation/prepare",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "POST",
+    "mime_type": "application/json",
+    "observed": 3,
+    "path": "/backend-api/files",
+    "status": 200
+  },
+  {
+    "host": "chatgpt.com",
+    "method": "POST",
+    "mime_type": "text/event-stream",
+    "observed": 3,
+    "path": "/backend-api/files/process_upload_stream",
+    "status": 200
+  }
+]

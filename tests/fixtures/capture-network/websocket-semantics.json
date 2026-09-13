@@ -1,0 +1,81 @@
+{
+  "cdp_event_counts": {
+    "Network.webSocketCreated": 6,
+    "Network.webSocketFrameReceived": 510,
+    "Network.webSocketFrameSent": 14,
+    "Network.webSocketHandshakeResponseReceived": 6,
+    "Network.webSocketWillSendHandshakeRequest": 6
+  },
+  "conversation_update_shape": {
+    "metadata": "null",
+    "payload": {
+      "conversation_id": "string",
+      "update_content": {
+        "messages": [
+          {
+            "author": {
+              "metadata": {},
+              "name": "string",
+              "role": "string"
+            },
+            "channel": "null",
+            "content": {
+              "content_type": "string",
+              "parts": [
+                "string"
+              ]
+            },
+            "create_time": "number",
+            "end_turn": "null",
+            "id": "string",
+            "metadata": {
+              "async_source": "string",
+              "cot_version": "string",
+              "default_model_slug": "string",
+              "finished_text": "string",
+              "initial_text": "string",
+              "message_type": "string",
+              "model_slug": "string",
+              "parent_id": "string",
+              "permissions": [
+                {
+                  "notification_channel_id": "…",
+                  "notification_channel_name": "…",
+                  "notification_priority": "…",
+                  "status": "…",
+                  "type": "…"
+                }
+              ],
+              "poll_freshness_max_mins": "integer",
+              "poll_interval_ms": "integer",
+              "poll_on_websocket_inactivity_ms": "integer",
+              "poll_suppress_reconnect_banner": "boolean",
+              "request_id": "string",
+              "resolved_model_slug": "string",
+              "summarization_headline": "string",
+              "thinking_effort": "string",
+              "turn_exchange_id": "string",
+              "turn_id": "string",
+              "working_turn_id": "string"
+            },
+            "recipient": "string",
+            "status": "string",
+            "update_time": "null",
+            "weight": "number"
+          }
+        ]
+      },
+      "update_type": "string"
+    },
+    "type": "string"
+  },
+  "conversation_update_type_counts": {
+    "add-messages": 67,
+    "set-conversation-async-status": 3
+  },
+  "json_type_counts": {
+    "conversation-update": 70
+  },
+  "received_json_frames": 70,
+  "received_opaque_or_non_object_frames": 440
+}
