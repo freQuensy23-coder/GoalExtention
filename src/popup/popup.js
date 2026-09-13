@@ -14,7 +14,7 @@ async function activeTab() {
 }
 
 function sendToTab(type) {
-  return new Promise((resolve) => chrome.tabs.sendMessage(activeTabId, { type }, (response) => resolve(response)));
+  return new Promise((resolve) => chrome.tabs.sendMessage(activeTabId, { type }, (response) => resolve(chrome.runtime.lastError ? { ok: false, error: chrome.runtime.lastError.message } : response)));
 }
 
 function render(goal) {
@@ -24,7 +24,8 @@ function render(goal) {
     controls.hidden = true;
     return;
   }
-  summary.textContent = `${goal.status} · iteration ${goal.iteration}: ${goal.objective}`;
+  summary.textContent = `${goal.status} · sent ${goal.iteration}: ${goal.objective}` +
+    (goal.lastError ? `\n${goal.lastError}` : goal.status === 'needs_review' && goal.lastEvaluation ? `\n${goal.lastEvaluation.reason}` : '');
   controls.hidden = false;
   toggle.textContent = goal.status === "paused" ? "Resume" : "Pause";
   toggle.disabled = !["active", "paused"].includes(goal.status);

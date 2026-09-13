@@ -1,55 +1,51 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
-const Core = require("../src/shared/goal-core.js");
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const C = require('../src/shared/goal-core.js');
+const verdict = (overrides = {}) => ({ complete: false, reason: 'Missing tests', missing: ['Run tests'], confidence: 0.95, needsReview: false, ...overrides });
+const turn = (index, role = 'assistant', text = 'result') => ({ index, role, text, id: `id-${index}`, complete: true, artifacts: [] });
 
-test("parseGoalCommand extracts slash goal objective", () => {
-  assert.deepEqual(Core.parseGoalCommand("/goal Build the feature completely"), {
-    objective: "Build the feature completely",
-  });
-  assert.deepEqual(Core.parseGoalCommand(" /GOAL: verify tests "), { objective: "verify tests" });
-  assert.equal(Core.parseGoalCommand("hello /goal nope"), null);
-  assert.equal(Core.parseGoalCommand("/goal"), null);
+test('goal command parsing has a boundary, supports multiline and colon, rejects empty', () => {
+  assert.deepEqual(C.parseGoalCommand(' /GOAL: finish\nand test '), { objective: 'finish\nand test' });
+  for (const value of ['/goal', '/goals xyz', 'hello /goal xyz', '/goalkeeper test']) assert.equal(C.parseGoalCommand(value), null);
 });
-
-test("applyEvaluation completes a goal", () => {
-  const state = Core.createGoalState("ship", "old", 1);
-  const outcome = Core.applyEvaluation(state, { complete: true, reason: "done" }, 5, "new", 2);
-  assert.equal(outcome.shouldContinue, false);
-  assert.equal(outcome.state.status, "complete");
-  assert.equal(outcome.state.lastEvaluatedFingerprint, "new");
+test('thread identity ignores query parameters, accepts project routes, rejects foreign hosts and temporary pages', () => {
+  assert.equal(C.threadKey('https://chatgpt.com/g/demo/c/abc?model=x'), 'chatgpt:abc');
+  assert.equal(C.threadKey('https://chat.openai.com/c/abc/'), 'chatgpt:abc');
+  for (const url of ['https://chatgpt.com/', 'https://chatgpt.com.evil.test/c/abc', 'https://example.org/c/abc', 'http://chatgpt.com/c/abc', 'garbage']) assert.equal(C.threadKey(url), null);
 });
-
-test("applyEvaluation creates continuation and enforces iteration cap", () => {
-  let state = Core.createGoalState("ship", "", 1);
-  let outcome = Core.applyEvaluation(
-    state,
-    { complete: false, reason: "missing tests", missing: ["Run unit tests"] },
-    2,
-    "a",
-    2,
-  );
-  assert.equal(outcome.shouldContinue, true);
-  assert.match(outcome.continuation, /Run unit tests/);
-  state = outcome.state;
-  outcome = Core.applyEvaluation(state, { complete: false, missing: ["Still failing"] }, 2, "b", 3);
-  assert.equal(outcome.shouldContinue, false);
-  assert.equal(outcome.state.status, "blocked");
+test('strict judge verdict rejects coercion, missing fields and contradictory success', () => {
+  for (const bad of [{}, verdict({ complete: 'true' }), verdict({ confidence: 2 }), verdict({ confidence: NaN }), verdict({ missing: [42] }), verdict({ needsReview: undefined }), verdict({ complete: true })]) assert.throws(() => C.normalizeEvaluation(bad));
+  assert.equal(C.normalizeEvaluation(verdict({ complete: true, missing: [] })).complete, true);
 });
-
-test("truncateTranscript keeps newest messages within budget", () => {
-  const result = Core.truncateTranscript(
-    [
-      { role: "user", text: "a".repeat(20) },
-      { role: "assistant", text: "b".repeat(20) },
-      { role: "user", text: "latest" },
-    ],
-    45,
-  );
-  assert.equal(result.at(-1).text, "latest");
-  assert.ok(result.length < 3);
+test('completion preserves input and iteration count; review never sends a continuation', () => {
+  const state = C.createGoalState('ship', '', 1);
+  const result = C.applyEvaluation(state, verdict({ complete: true, missing: [] }), 2, 'final', 2);
+  assert.equal(result.state.status, 'complete'); assert.equal(state.status, 'active'); assert.equal(result.state.iteration, 0);
+  for (const v of [verdict({ needsReview: true }), verdict({ confidence: 0.2 })]) {
+    const r = C.applyEvaluation(state, v, 2, 'review'); assert.equal(r.state.status, 'needs_review'); assert.equal(r.shouldContinue, false);
+  }
 });
-
-test("fingerprintText is deterministic and content-sensitive", () => {
-  assert.equal(Core.fingerprintText("abc"), Core.fingerprintText("abc"));
-  assert.notEqual(Core.fingerprintText("abc"), Core.fingerprintText("abd"));
+test('iteration cap allows exactly N acknowledged sends, not N evaluator calls', () => {
+  const state = C.createGoalState('ship');
+  assert.equal(C.applyEvaluation({ ...state, iteration: 1 }, verdict(), 2, 'a').shouldContinue, true);
+  const limited = C.applyEvaluation({ ...state, iteration: 2 }, verdict(), 2, 'b');
+  assert.equal(limited.state.status, 'blocked'); assert.equal(limited.shouldContinue, false);
+  assert.match(C.applyEvaluation(state, verdict(), 2, 'c').continuation, /Run tests/);
+});
+test('fingerprints distinguish repeated text in different turns and image-only responses', () => {
+  assert.notEqual(C.turnFingerprint(turn(2)), C.turnFingerprint(turn(4)));
+  const a = { ...turn(2, 'assistant', ''), artifacts: [{ kind: 'image', name: 'a' }] };
+  assert.notEqual(C.turnFingerprint(a), C.turnFingerprint({ ...a, artifacts: [{kind: 'image', name: 'b'}] }));
+});
+test('history preserves virtualized turns and strips unrelated pre-goal content', () => {
+  const first = C.mergeHistory([], [turn(1), turn(2), turn(3), turn(4)], 3);
+  const next = C.mergeHistory(first, [turn(4, 'assistant', 'updated'), turn(5)], 3);
+  assert.deepEqual(next.map(t => t.index), [3, 4, 5]); assert.equal(next[1].text, 'updated');
+  assert.equal(C.contextProblem(next, 3), null);
+  assert.match(C.contextProblem([turn(3), turn(5)], 3), /missing/);
+  assert.match(C.contextProblem([turn(3, 'user', 'x'.repeat(50001))], 3), /budget/);
+});
+test('normalization never upgrades unknown roles or artifact metadata into evidence', () => {
+  assert.equal(C.normalizeTurn(turn(1, 'tool')), null);
+  assert.equal(C.normalizeTurn({...turn(1), artifacts: [{kind: 'image', name: 'test', verified: true}]}).artifacts[0].verified, false);
 });

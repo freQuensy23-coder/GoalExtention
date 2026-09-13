@@ -9,7 +9,7 @@
 <body>
   <main>
     <h1>ChatgptGoal</h1>
-    <p>The evaluator runs in the extension background. The API key is never injected into the ChatGPT page.</p>
+    <p>The evaluator runs in the extension background. The API key is restricted to extension contexts. It is saved locally without encryption. The goal and observed conversation are sent to your chosen evaluator provider.</p>
     <form id="settings-form">
       <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="sk-…" /></label>
       <label>Evaluator endpoint<input id="api-endpoint" type="url" required /></label>
@@ -20,6 +20,8 @@
     </form>
     <p class="hint">Default endpoint: OpenAI Responses API. A custom HTTPS endpoint may trigger a Chrome host-permission prompt.</p>
   </main>
+  <script src="../shared/goal-core.js"></script>
+  <script src="../background/evaluator.js"></script>
   <script src="options.js"></script>
 </body>
 </html>
