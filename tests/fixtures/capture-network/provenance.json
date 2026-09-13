@@ -1,0 +1,92 @@
+{
+  "manifest_listed_members": 3437,
+  "manifest_sha256": "e263b7cccee4aa13e3e1ffb7af4217ecf3d91c2085e73b5870bfa0eb3621d619",
+  "private_archive_members": 3438,
+  "projection_policy": "allowlist-structure-only-v1",
+  "sources": [
+    {
+      "bytes": 13660,
+      "kind": "named-source",
+      "name": "catalog.json",
+      "sha256": "2b1e0db5b1fa8d8ab50778579dfa7a92dc0de0c38409f0561675aefa8f1e1d69"
+    },
+    {
+      "bytes": 54114280,
+      "kind": "named-source",
+      "name": "network-events.jsonl",
+      "sha256": "0122302c371388b13e9390b82aa02a4dea07ff9495e4afeca0a95e389c57e8ab"
+    },
+    {
+      "bytes": 1433449,
+      "kind": "named-source",
+      "name": "websocket-and-eventsource.jsonl",
+      "sha256": "279d4429233d58cded5ed561658b9a37d012602d791ce2a1d32b3caf7e37a374"
+    },
+    {
+      "bytes": 53658394,
+      "kind": "named-source",
+      "name": "api-requests-responses.jsonl",
+      "sha256": "176910b3e1bef611bc9dc908bbd237924b42acb144ebfddff38aae121721c384"
+    },
+    {
+      "bytes": 226269918,
+      "kind": "named-source",
+      "name": "traffic.har",
+      "sha256": "d1a6d68c660c7ce71364998c827ece6d4f78abda0026f80aea70737ed7a67e22"
+    },
+    {
+      "bytes": 28190,
+      "index": 1,
+      "kind": "stream",
+      "sha256": "aefa91f38d5b1716c4f74e31d4d3f965c548cc1d846315660841e715c7123c88"
+    },
+    {
+      "bytes": 828,
+      "index": 2,
+      "kind": "stream",
+      "sha256": "bf148a103a322d4f5b5fcf6defbab04712ce1543cb2e91d1620d5a17bef871fa"
+    },
+    {
+      "bytes": 20592,
+      "index": 3,
+      "kind": "stream",
+      "sha256": "424644b52603f32c787e4eea3bc1df399e3b56b8279504bb2dbe606dadd5c941"
+    },
+    {
+      "bytes": 701,
+      "index": 4,
+      "kind": "stream",
+      "sha256": "32fcde996dc9fbddb3f885c4666f50403c7bad1d04998ca6efe1b42bec8f13c2"
+    },
+    {
+      "bytes": 701,
+      "index": 5,
+      "kind": "stream",
+      "sha256": "80ce8ea3402c10f4cc7cd6633581e9c80354119b820078b7e48244ca5b1e3edf"
+    },
+    {
+      "bytes": 14110,
+      "index": 6,
+      "kind": "stream",
+      "sha256": "f5b697812ed1ff772fefcf71fd910a149d5d83139de94c4ac5385e2bde92c41e"
+    },
+    {
+      "bytes": 3498,
+      "index": 7,
+      "kind": "stream",
+      "sha256": "f7df955326f001d93d6ebf17fff63d0b1ab69f8f775faacac3f63fe973ab149c"
+    },
+    {
+      "bytes": 952,
+      "index": 8,
+      "kind": "stream",
+      "sha256": "dbdc2ba66a649f18c50d150eaedd766d8ad97e1b49bebf51c92b4351d8d7757a"
+    },
+    {
+      "bytes": 952,
+      "index": 9,
+      "kind": "stream",
+      "sha256": "e3f96b7b9d8f45c08b4a384af898f07145a49bfabc15ecf0b079a884eb260075"
+    }
+  ]
+}

@@ -1,0 +1,191 @@
+{
+  "request_shapes": {
+    "POST /backend-api/f/conversation": {
+      "action": "string",
+      "client_contextual_info": {
+        "app_name": "string",
+        "has_web_push_capabilities": "boolean",
+        "is_dark_mode": "boolean",
+        "page_height": "integer",
+        "page_width": "integer",
+        "pixel_ratio": "integer",
+        "screen_height": "integer",
+        "screen_width": "integer",
+        "time_since_loaded": "integer",
+        "web_push_notification_permission": "string"
+      },
+      "client_prepare_state": "string",
+      "conversation_id": "string",
+      "conversation_mode": {
+        "kind": "string"
+      },
+      "conversation_origin": "string",
+      "enable_message_followups": "boolean",
+      "force_parallel_switch": "string",
+      "local_function_names": [
+        "string"
+      ],
+      "messages": [
+        {
+          "author": {
+            "role": "string"
+          },
+          "content": {
+            "content_type": "string",
+            "parts": [
+              "string"
+            ]
+          },
+          "create_time": "number",
+          "id": "string",
+          "metadata": {
+            "selected_sources": [],
+            "serialization_metadata": {
+              "custom_symbol_offsets": []
+            },
+            "submission_mode": "string"
+          }
+        }
+      ],
+      "model": "string",
+      "model_response_contracts": [
+        {
+          "id": "string",
+          "presets": [
+            "string"
+          ],
+          "protocol_version": "integer"
+        }
+      ],
+      "paragen_cot_summary_display_override": "string",
+      "parent_message_id": "string",
+      "supported_encodings": [
+        "string"
+      ],
+      "supports_buffering": "boolean",
+      "system_hints": [],
+      "thinking_effort": "string",
+      "timezone": "string",
+      "timezone_offset_min": "integer"
+    }
+  },
+  "response_shapes": {
+    "GET /backend-api/conversations/<conversation_id>": {
+      "async_status": "null",
+      "atlas_mode_enabled": "null",
+      "blocked_urls": [],
+      "context_scopes": [],
+      "context_truncation_continuation": "null",
+      "conversation_id": "string",
+      "conversation_origin": "null",
+      "conversation_template_id": "null",
+      "create_time": "number",
+      "current_node": "string",
+      "default_model_slug": "string",
+      "disabled_tool_ids": [],
+      "gizmo_id": "null",
+      "gizmo_type": "null",
+      "is_archived": "boolean",
+      "is_do_not_remember": "boolean",
+      "is_read_only": "null",
+      "is_starred": "null",
+      "is_study_mode": "boolean",
+      "is_temporary_chat": "boolean",
+      "memory_scope": "string",
+      "messages": [
+        {
+          "author": {
+            "metadata": {},
+            "name": "null",
+            "role": "string"
+          },
+          "channel": "null",
+          "content": {
+            "content_type": "string",
+            "parts": [
+              "string"
+            ]
+          },
+          "create_time": "number",
+          "end_turn": "null",
+          "id": "string",
+          "metadata": {
+            "can_save": "boolean",
+            "is_visually_hidden_from_conversation": "boolean",
+            "message_source": "null",
+            "request_id": "string",
+            "turn_exchange_id": "string",
+            "turn_id": "string",
+            "working_turn_id": "string"
+          },
+          "recipient": "string",
+          "status": "string",
+          "update_time": "null",
+          "weight": "number"
+        }
+      ],
+      "moderation_results": [],
+      "owner": "null",
+      "page_info": {
+        "end_cursor": "string",
+        "has_next_page": "boolean",
+        "has_previous_page": "boolean",
+        "start_cursor": "string"
+      },
+      "pinned_time": "null",
+      "plugin_ids": "null",
+      "safe_urls": [],
+      "sugar_item_id": "null",
+      "sugar_item_visible": "boolean",
+      "title": "string",
+      "update_time": "number",
+      "voice": "null"
+    },
+    "GET /backend-api/files/<file_id>/simple": {
+      "file_id": "string",
+      "file_name": "string",
+      "gizmo_id": "null",
+      "id": "string",
+      "is_library_file": "boolean",
+      "is_project": "null",
+      "library_directory_id": "string",
+      "library_file_id": "string",
+      "mime_type": "string"
+    },
+    "GET /backend-api/files/download/<file_id>": {
+      "creation_time": "null",
+      "download_url": "string",
+      "file_name": "string",
+      "file_size_bytes": "integer",
+      "metadata": "null",
+      "mime_type": "null",
+      "no_auth_user_upload": "null",
+      "status": "string"
+    },
+    "POST /backend-api/conversation/init": {
+      "atlas_mode_enabled": "null",
+      "banner_info": "null",
+      "blocked_features": [],
+      "default_model_slug": "string",
+      "intended_default_model_slug": "string",
+      "limits_progress": [
+        {
+          "feature_name": "string",
+          "remaining": "integer",
+          "reset_after": "string"
+        }
+      ],
+      "model_limits": [],
+      "type": "string"
+    },
+    "POST /backend-api/f/conversation/prepare": {
+      "conduit_token": "string",
+      "status": "string"
+    },
+    "POST /backend-api/files": {
+      "file_id": "string",
+      "status": "string",
+      "upload_url": "string"
+    }
+  }
+}
