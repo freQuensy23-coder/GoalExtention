@@ -46,23 +46,32 @@
       if (node.classList.contains('katex')) return node.querySelector('annotation')?.textContent || '';
       if (node.matches('script, style, button, svg, img, [hidden], [aria-hidden="true"], .sr-only, .hidden')) return '';
       if (node.tagName === 'BR') return '\n';
-      if (node.tagName === 'PRE') return '\n```\n' + (node.querySelector('code') || node).textContent.trim() + '\n```\n';
+      if (node.tagName === 'PRE') return '\n```\n' + (node.querySelector('code') || node).textContent + '\n```\n';
       if (node.tagName === 'TABLE') return '\n' + [...node.rows].map(row => '| ' + [...row.cells].map(cell => [...cell.childNodes].map(textOf).join('').trim()).join(' | ') + ' |').join('\n') + '\n';
       const text = [...node.childNodes].map(textOf).join('');
       return /^(P|DIV|LI|H[1-6]|UL|OL|BLOCKQUOTE)$/.test(node.tagName) ? `\n${text}\n` : text;
     }
     function artifactsOf(turn) {
       const items = [];
+      const images = new Set(), files = new Set();
       for (const img of turn.querySelectorAll('img[alt]')) {
         const alt = img.getAttribute('alt').trim();
-        if (alt) items.push({ kind: 'image', name: alt.slice(0, 200), verified: false });
+        // Captured image cards have several display/glow <img> layers.
+        // Identity is the image container (or source), never its human label.
+        const identity = img.closest('[id^="image-"], [class~="group/imagegen-image"]') ||
+          img.currentSrc || img.getAttribute('src') || img;
+        if (alt && !images.has(identity)) {
+          images.add(identity);
+          items.push({ kind: 'image', name: alt.slice(0, 200), verified: false });
+        }
       }
       for (const el of turn.querySelectorAll('button[aria-label], a[href]')) {
         const label = el.getAttribute('aria-label') || el.textContent;
         const name = label?.match(/([^\s/\\]+\.(?:txt|json|csv|pdf|docx?|xlsx?|pptx?|zip|md|py|js|html))\b/i)?.[1];
-        if (name) items.push({ kind: 'file', name, verified: false });
+        if (name && !files.has(name)) { files.add(name); items.push({ kind: 'file', name, verified: false }); }
       }
-      return [...new Map(items.map(a => [`${a.kind}:${a.name}`, a])).values()];
+      // Source URLs and DOM identities stay local; only unverified labels leave the adapter.
+      return items;
     }
     function collectMessages() {
       return [...(root()?.querySelectorAll(SELECTORS.turn) || [])].flatMap(turn => {
@@ -72,8 +81,10 @@
         const nodes = [...turn.querySelectorAll(`[data-message-author-role="${role}"]`)]
           .filter(n => !n.parentElement.closest('[data-message-author-role]'));
         // User file tiles are siblings of the actual prompt; their filenames are not command text.
+        // Whitespace inside code is evidence, including indentation and blank lines.
+        // Do not normalize the combined rendered text after extracting <pre>.
         const text = nodes.map(n => textOf(role === 'user' ?
-          (n.querySelector('[data-testid="collapsible-user-message-content"]') || n.querySelector('.whitespace-pre-wrap') || n) : n).replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim()).filter(Boolean).join('\n\n');
+          (n.querySelector('[data-testid="collapsible-user-message-content"]') || n.querySelector('.whitespace-pre-wrap') || n) : n).trim()).filter(Boolean).join('\n\n');
         return [{ id: nodes.map(n => n.dataset.messageId).filter(Boolean).join('|') || turn.dataset.testid,
           index, role, text, artifacts: artifactsOf(turn),
           complete: role === 'assistant' && Boolean(turn.querySelector(SELECTORS.terminal)) }];
