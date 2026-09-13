@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ChatgptGoal settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <h1>ChatgptGoal</h1>
+    <p>The evaluator runs in the extension background. The API key is never injected into the ChatGPT page.</p>
+    <form id="settings-form">
+      <label>API key<input id="api-key" type="password" autocomplete="off" placeholder="sk-…" /></label>
+      <label>Evaluator endpoint<input id="api-endpoint" type="url" required /></label>
+      <label>Evaluator model<input id="model" type="text" required /></label>
+      <label>Maximum continuation iterations<input id="max-iterations" type="number" min="1" max="100" required /></label>
+      <button type="submit">Save</button>
+      <span id="status" role="status"></span>
+    </form>
+    <p class="hint">Default endpoint: OpenAI Responses API. A custom HTTPS endpoint may trigger a Chrome host-permission prompt.</p>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
