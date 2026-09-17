@@ -1,0 +1,132 @@
+{
+  "delta_operation_counts": {
+    "add": 4,
+    "append": 4,
+    "patch": 4
+  },
+  "event_counts": {
+    "delta": 54,
+    "delta_encoding": 6,
+    "message": 45,
+    "ndjson": 10
+  },
+  "message_type_counts": {
+    "conversation_detail_metadata": 4,
+    "input_message": 4,
+    "message_marker": 13,
+    "message_stream_complete": 4,
+    "resume_conversation_token": 6,
+    "server_ste_metadata": 4,
+    "stream_handoff": 2,
+    "title_generation": 2
+  },
+  "representative_field_paths_by_delta_operation": {
+    "add": [
+      "c",
+      "o",
+      "p",
+      "v.conversation_id",
+      "v.error",
+      "v.error_code",
+      "v.message.author.metadata",
+      "v.message.author.name",
+      "v.message.author.role",
+      "v.message.channel",
+      "v.message.content.content_type",
+      "v.message.content.user_instructions",
+      "v.message.content.user_profile",
+      "v.message.create_time",
+      "v.message.end_turn",
+      "v.message.id",
+      "v.message.metadata.is_user_system_message",
+      "v.message.metadata.is_visually_hidden_from_conversation",
+      "v.message.metadata.model_switcher_deny[]",
+      "v.message.metadata.turn_id",
+      "v.message.metadata.user_context_message_data.about_model_message",
+      "v.message.metadata.user_context_message_data.about_user_message",
+      "v.message.recipient",
+      "v.message.status",
+      "v.message.update_time",
+      "v.message.weight"
+    ],
+    "append": [
+      "o",
+      "p",
+      "v"
+    ],
+    "patch": [
+      "o",
+      "p",
+      "v[].o",
+      "v[].p",
+      "v[].v"
+    ]
+  },
+  "representative_field_paths_by_message_type": {
+    "input_message": [
+      "conversation_id",
+      "input_message.author.metadata",
+      "input_message.author.name",
+      "input_message.author.role",
+      "input_message.channel",
+      "input_message.content.content_type",
+      "input_message.content.parts[]",
+      "input_message.create_time",
+      "input_message.end_turn",
+      "input_message.id",
+      "input_message.metadata.is_visually_hidden_from_conversation",
+      "input_message.metadata.message_source",
+      "input_message.metadata.parent_id",
+      "input_message.metadata.request_id",
+      "input_message.metadata.turn_exchange_id",
+      "input_message.metadata.turn_id",
+      "input_message.metadata.working_turn_id",
+      "input_message.recipient",
+      "input_message.status",
+      "input_message.update_time",
+      "input_message.weight",
+      "type"
+    ],
+    "message_marker": [
+      "conversation_id",
+      "event",
+      "marker",
+      "message_id",
+      "type"
+    ],
+    "message_stream_complete": [
+      "conversation_id",
+      "type"
+    ],
+    "resume_conversation_token": [
+      "conversation_id",
+      "kind",
+      "token",
+      "type"
+    ],
+    "stream_handoff": [
+      "conversation_id",
+      "options[].topic_id",
+      "options[].type",
+      "turn_exchange_id",
+      "type"
+    ]
+  },
+  "stream_handoff_shape": {
+    "conversation_id": "string",
+    "options": [
+      {
+        "topic_id": "string",
+        "type": "string"
+      }
+    ],
+    "turn_exchange_id": "string",
+    "type": "string"
+  },
+  "upload_processing_event_counts": {
+    "file.indexing.completed": 1,
+    "file.processing.completed": 3,
+    "file.processing.file_ready": 3,
+    "file.processing.started": 3
+  }
+}
