@@ -35,11 +35,14 @@
       missing: raw.missing.map(s => s.trim().slice(0, 1000)).filter(Boolean).slice(0, 12),
       confidence: raw.confidence, needsReview: raw.needsReview };
   }
-  function buildContinuationPrompt(evaluation) {
-    return ['Твоя задача ещё не выполнена. Не пингуй меня, пока она не будет полностью готова.',
-      'Продолжай работу над исходной целью и проверь результат перед завершением.',
-      'Не обходи ограничения, отказы и запросы разрешений. Если без моего участия продолжить нельзя, сообщи об этом.',
-      'Осталось выполнить:', ...(evaluation.missing.length ? evaluation.missing : [evaluation.reason])].join('\n\n');
+  function buildContinuationPrompt(objective) {
+    return [
+      'You are working in a fully automated environment, and you must complete the task entirely on your own if the message was preceded by /goal.',
+      'Your task:\n' + objective,
+      'If you have any questions that should be discussed, then NO — you DO NOT HAVE THE RIGHT TO DISCUSS THEM and must choose the best solution on your own.',
+      'If you reach a dead end, you must not spout nonsense about the task being impossible — instead, stop, think deeply about what you are doing wrong, and find a better path.',
+      'Likewise, when there are problems with access, permissions, etc. — if you do not have access to a tool in automated mode, that means you do NOT need it to complete this task, and you should stop and plan the work better using other tools configured for this task.',
+    ].join('\n\n');
   }
   function createGoalState(objective, baselineFingerprint = '', now = Date.now()) {
     return { objective: String(objective || '').trim(), status: 'active', iteration: 0, revision: 1,
@@ -54,7 +57,7 @@
     if (e.needsReview || e.confidence < 0.75) next.status = 'needs_review';
     else if (e.complete) next.status = 'complete';
     else if (state.iteration >= maxIterations) { next.status = 'blocked'; next.lastError = 'Maximum continuation iterations reached.'; }
-    else continuation = buildContinuationPrompt(e);
+    else continuation = buildContinuationPrompt(state.objective);
     return { state: next, shouldContinue: Boolean(continuation), continuation };
   }
   function normalizeTurn(t) {

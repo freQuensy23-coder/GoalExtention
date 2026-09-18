@@ -30,7 +30,21 @@ test('iteration cap allows exactly N acknowledged sends, not N evaluator calls',
   assert.equal(C.applyEvaluation({ ...state, iteration: 1 }, verdict(), 2, 'a').shouldContinue, true);
   const limited = C.applyEvaluation({ ...state, iteration: 2 }, verdict(), 2, 'b');
   assert.equal(limited.state.status, 'blocked'); assert.equal(limited.shouldContinue, false);
-  assert.match(C.applyEvaluation(state, verdict(), 2, 'c').continuation, /Run tests/);
+  assert.match(C.applyEvaluation(state, verdict(), 2, 'c').continuation, /Your task:\nship/);
+});
+test('continuations use the exact translated template with the original multiline goal', () => {
+  const state = C.createGoalState('Implement the feature\nand verify the result.');
+  const result = C.applyEvaluation(state, verdict(), 2, 'a');
+  const expected = [
+    'You are working in a fully automated environment, and you must complete the task entirely on your own if the message was preceded by /goal.',
+    'Your task:\nImplement the feature\nand verify the result.',
+    'If you have any questions that should be discussed, then NO — you DO NOT HAVE THE RIGHT TO DISCUSS THEM and must choose the best solution on your own.',
+    'If you reach a dead end, you must not spout nonsense about the task being impossible — instead, stop, think deeply about what you are doing wrong, and find a better path.',
+    'Likewise, when there are problems with access, permissions, etc. — if you do not have access to a tool in automated mode, that means you do NOT need it to complete this task, and you should stop and plan the work better using other tools configured for this task.',
+  ].join('\n\n');
+  assert.equal(result.shouldContinue, true);
+  assert.equal(result.continuation, expected);
+  assert.equal(C.applyEvaluation(state, verdict({ missing: [], reason: 'Different feedback' }), 2, 'b').continuation, expected);
 });
 test('fingerprints distinguish repeated text in different turns and image-only responses', () => {
   assert.notEqual(C.turnFingerprint(turn(2)), C.turnFingerprint(turn(4)));

@@ -144,7 +144,8 @@ with sync_playwright() as playwright, tempfile.TemporaryDirectory() as profile:
 
         assert len(submissions) == 2, submissions
         assert submissions[0].startswith("/goal ")
-        assert "Твоя задача ещё не выполнена" in submissions[1]
+        assert "You are working in a fully automated environment" in submissions[1]
+        assert "Your task:\nfinish the offline native smoke test" in submissions[1]
         assert judge_calls == 2, judge_calls
         assert final["pending"] is None
         print("Native offline /goal loop passed: content script -> session state -> evaluator -> auto-send -> complete.")
