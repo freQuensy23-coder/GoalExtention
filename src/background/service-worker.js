@@ -9,7 +9,7 @@ const service = ChatgptGoalService.createService({
   storage: chrome.storage.session,
   getSettings: async () => {
     const result = await chrome.storage.local.get('chatgptGoal.settings');
-    return { apiKey: '', apiEndpoint: 'https://api.openai.com/v1/responses', model: 'gpt-5-mini', maxIterations: 12,
+    return { ...ChatgptGoalEvaluator.DEFAULTS,
       ...(result['chatgptGoal.settings'] || {}) };
   },
   evaluate: args => ChatgptGoalEvaluator.evaluateGoal(args),
