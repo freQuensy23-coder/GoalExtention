@@ -94,7 +94,7 @@ class CapturedDOMTests(ChromiumCase):
             result=next(t for t in s['turns'] if t['index']==index)
             self.assertEqual(result['text'],'');self.assertTrue(result['complete'])
             self.assertEqual(len([a for a in result['artifacts'] if a['kind']=='image']),1)
-            self.assertFalse(result['artifacts'][0]['verified'])
+            self.assertIn('url',result['artifacts'][0])
     def test_goal_prompt_excludes_attached_file_tile_labels(self):
         self.load(FIXTURES[3]['html'])
         self.page.evaluate("document.querySelector('[data-testid=conversation-turn-3] .whitespace-pre-wrap').textContent='/goal ship'")
@@ -180,10 +180,10 @@ class ControllerTests(ChromiumCase):
         self.page.evaluate('''delayed=>{
           const data={};window.goalData=data;window.requests=[];window.popupListeners=[];let id=0;
           const storage={get:async k=>structuredClone({[k]:data[k]}),set:async o=>Object.assign(data,structuredClone(o)),remove:async k=>delete data[k]};
-          window.svc=ChatgptGoalService.createService({storage,randomId:()=>`test-${++id}`,getSettings:async()=>({maxIterations:2}),evaluate:async()=>{
+          window.svc=ChatgptGoalService.createService({storage,randomId:()=>`test-${++id}`,getSettings:async()=>({historyMessages:2}),evaluate:async()=>{
             requests.push('judge');
             if(delayed) await new Promise(r=>window.releaseJudge=r);
-            return {complete:false,reason:'Need tests',missing:['Run tests'],confidence:.95,needsReview:false};
+            return {is_goal_done:false,short_explanation:'Need tests'};
           }});
           window.chrome={runtime:{sendMessage:(m,cb)=>svc.handleMessage(m,{tab:{id:1},frameId:0,url:testUrl}).then(cb).catch(e=>cb({ok:false,error:e.message})),onMessage:{addListener:f=>popupListeners.push(f)}}};
         }''',delayed)

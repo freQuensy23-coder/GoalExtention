@@ -118,14 +118,14 @@ with sync_playwright() as playwright, tempfile.TemporaryDirectory() as profile:
             apiKey: 'synthetic-key-not-a-credential',
             apiEndpoint: 'https://api.openai.com/v1/responses',
             model: 'synthetic-evaluator',
-            maxIterations: 3,
+            historyMessages: 3,
           }});
           globalThis.__nativeJudgeCalls = 0;
           globalThis.fetch = async () => {
             globalThis.__nativeJudgeCalls += 1;
             const verdict = globalThis.__nativeJudgeCalls === 1
-              ? {complete:false, reason:'One check remains', missing:['Finish the remaining check'], confidence:0.99, needsReview:false}
-              : {complete:true, reason:'All requested work is visible', missing:[], confidence:0.99, needsReview:false};
+              ? {is_goal_done:false, short_explanation:'One check remains'}
+              : {is_goal_done:true, short_explanation:'All requested work is visible'};
             return new Response(JSON.stringify({
               status:'completed',
               output:[{type:'message', content:[{type:'output_text', text:JSON.stringify(verdict)}]}],

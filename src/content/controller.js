@@ -54,7 +54,7 @@
         const anchor = snapshot.turns.find(t => t.role === 'user' && t.index > pendingGoal.afterIndex && !pendingGoal.previousIds.includes(t.id) && Core.parseGoalCommand(t.text)?.objective === pendingGoal.objective);
         if (anchor) {
           const pending = pendingGoal; pendingGoal = null;
-          const result = await runtime({ type: 'CG_SET_GOAL', objective: pending.objective, anchor });
+          const result = await runtime({ type: 'CG_SET_GOAL', objective: pending.objective, anchor, transcript: snapshot.turns });
           if (!result.ok) error(result.error || 'Could not start the goal.');
           lastSignature = ''; stableSince = Date.now(); return;
         }
@@ -70,7 +70,14 @@
       if (goal.pending) { await pause('An interrupted continuation needs review before resuming.'); return; }
       const unchanged = () => !disposed && epoch === version && Core.threadKey(getUrl()) === thread && signature(Dom.snapshot()) === sig;
       if (!unchanged()) return;
-      const result = await runtime({ type: 'CG_EVALUATE', goalId: goal.goalId, transcript: snapshot.turns });
+      let transcript;
+      try {
+        transcript = await Dom.prepareTranscript(Core.mergeHistory(goal.history || [], snapshot.turns, 1), goal.historyMessages || 20);
+      } catch (e) {
+        await pause(e.message); return;
+      }
+      if (!unchanged()) return;
+      const result = await runtime({ type: 'CG_EVALUATE', goalId: goal.goalId, transcript });
       if (!result.ok || !result.shouldContinue) return;
       if (!unchanged() || Dom.hasDraft() || Dom.interactionBlocked()) {
         await runtime({ type: 'CG_SEND_FAILED', goalId: goal.goalId, token: result.token }); return;
@@ -108,7 +115,16 @@
   // Polling also catches SPA history changes without patching the page's scripts.
   const interval = setInterval(schedule, 500); schedule();
   browser.runtime.onMessage.addListener((message, _sender, respond) => {
-    if (message.type === 'CG_POPUP_STATUS') { runtime({ type: 'CG_GET_GOAL' }).then(respond); return true; }
+    if (message.type === 'CG_POPUP_STATUS') {
+      runtime({ type: 'CG_GET_GOAL' }).then(result => {
+        const s = Dom.snapshot();
+        const waiting = s.generating ? 'Waiting for ChatGPT to finish.' : !s.composerReady ? 'Waiting for the chat editor.'
+          : s.blocked ? 'Close the open dialog or menu to continue.' : s.draft ? 'An unsent draft is present.'
+          : !s.candidate ? 'Waiting for a completed assistant message.' : busy ? 'Checking the goal.' : 'Waiting for a stable response.';
+        respond({ ...result, waiting });
+      });
+      return true;
+    }
     if (['CG_PAUSE_GOAL', 'CG_RESUME_GOAL', 'CG_CLEAR_GOAL'].includes(message.type)) {
       epoch++; pendingGoal = null;
       runtime({ type: message.type }).then(result => { respond(result); schedule(); }); return true;

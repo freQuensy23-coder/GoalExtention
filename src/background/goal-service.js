@@ -31,11 +31,13 @@
       return serial(tabId, async () => {
         let goal = await read(tabId);
         if (message.type === 'CG_SET_GOAL') {
+          const settings = await getSettings();
           const anchor = Core.normalizeTurn(message.anchor);
           const command = anchor && Core.parseGoalCommand(anchor.text);
           if (!anchor || anchor.role !== 'user' || !command || command.objective !== message.objective || command.objective.length > 4000) throw new Error('Goal must match an observed submitted /goal message (maximum 4000 characters).');
           goal = { ...Core.createGoalState(command.objective), goalId: randomId(), threadKey: thread,
-            anchorId: anchor.id, anchorIndex: anchor.index, history: [anchor] };
+            historyMessages: Math.max(1, Math.min(100, Math.floor(Number(settings.historyMessages) || 20))),
+            anchorId: anchor.id, anchorIndex: anchor.index, history: Core.mergeHistory([], [...(message.transcript || []), anchor], 1).slice(-100) };
           return { ok: true, goal: await save(tabId, goal) };
         }
         if (message.type === 'CG_GET_GOAL') return { ok: true, goal: matches(goal, message, thread) ? goal : null };
@@ -55,7 +57,7 @@
           const sent = Core.normalizeTurn(message.turn);
           if (!sent || sent.role !== 'user' || sent.text.trim() !== goal.pending.text.trim() || sent.index <= goal.history.at(-1).index) throw new Error('Submission was not acknowledged by a new user turn.');
           goal = { ...goal, pending: null, iteration: goal.iteration + 1, revision: goal.revision + 1,
-            history: Core.mergeHistory(goal.history, [sent], goal.anchorIndex) };
+            history: Core.mergeHistory(goal.history, [sent], 1).slice(-100) };
         } else if (message.type === 'CG_SEND_FAILED') {
           if (goal.pending?.token !== message.token) return { ok: true, skipped: true };
           goal = { ...goal, status: 'paused', pending: null, revision: goal.revision + 1, lastError: 'Continuation was not acknowledged. Check the chat before resuming.' };
@@ -78,11 +80,9 @@
         if (!latest || latest.role !== 'assistant' || !latest.complete || latest.index <= goal.anchorIndex) return null;
         const fingerprint = Core.turnFingerprint(latest);
         if (fingerprint === goal.lastEvaluatedFingerprint) return null;
-        const history = Core.mergeHistory(goal.history, visible, goal.anchorIndex);
-        let problem = Core.contextProblem(history, goal.anchorIndex);
-        if (goal.history.at(-1)?.index > latest.index) problem = 'The current conversation branch is older than the observed history.';
-        if (!latest.text.trim() && latest.artifacts.length) problem = 'Image-only output needs visual verification; the evaluator receives no pixels.';
-        if (problem) { await save(tabId, { ...goal, history, status: 'needs_review', lastError: problem }); return null; }
+        const settings = await getSettings();
+        const count = Math.max(1, Math.min(100, Math.floor(Number(settings.historyMessages) || 20)));
+        const history = Core.mergeHistory(goal.history, visible, 1).slice(-count);
         const lease = { token: randomId(), revision: goal.revision, startedAt: Date.now() };
         goal = { ...goal, history, evaluating: lease }; await save(tabId, goal);
         return { goal, lease, fingerprint };
@@ -102,7 +102,7 @@
           return { ok: false, error: failure, goal };
         }
         let outcome;
-        try { outcome = Core.applyEvaluation(current, verdict, Math.max(1, Math.min(100, Math.floor(Number(settings.maxIterations) || 12))), prepared.fingerprint); }
+        try { outcome = Core.applyEvaluation(current, verdict, prepared.fingerprint); }
         catch {
           const goal = await save(tabId, { ...current, status: 'paused', evaluating: null, lastError: 'Invalid evaluator verdict.' });
           return { ok: false, error: goal.lastError, goal };

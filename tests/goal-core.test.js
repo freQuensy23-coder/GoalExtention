@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const C = require('../src/shared/goal-core.js');
-const verdict = (overrides = {}) => ({ complete: false, reason: 'Missing tests', missing: ['Run tests'], confidence: 0.95, needsReview: false, ...overrides });
+const verdict = (overrides = {}) => ({ is_goal_done: false, short_explanation: 'Missing tests', ...overrides });
 const turn = (index, role = 'assistant', text = 'result') => ({ index, role, text, id: `id-${index}`, complete: true, artifacts: [] });
 
 test('goal command parsing has a boundary, supports multiline and colon, rejects empty', () => {
@@ -13,28 +13,20 @@ test('thread identity ignores query parameters, accepts project routes, rejects 
   assert.equal(C.threadKey('https://chat.openai.com/c/abc/'), 'chatgpt:abc');
   for (const url of ['https://chatgpt.com/', 'https://chatgpt.com.evil.test/c/abc', 'https://example.org/c/abc', 'http://chatgpt.com/c/abc', 'garbage']) assert.equal(C.threadKey(url), null);
 });
-test('strict judge verdict rejects coercion, missing fields and contradictory success', () => {
-  for (const bad of [{}, verdict({ complete: 'true' }), verdict({ confidence: 2 }), verdict({ confidence: NaN }), verdict({ missing: [42] }), verdict({ needsReview: undefined }), verdict({ complete: true })]) assert.throws(() => C.normalizeEvaluation(bad));
-  assert.equal(C.normalizeEvaluation(verdict({ complete: true, missing: [] })).complete, true);
+test('judge accepts exactly the two requested fields', () => {
+  for (const bad of [{}, verdict({is_goal_done:'true'}), verdict({short_explanation:1}), verdict({confidence:1})]) assert.throws(() => C.normalizeEvaluation(bad));
+  assert.deepEqual(C.normalizeEvaluation(verdict()), verdict());
 });
-test('completion preserves input and iteration count; review never sends a continuation', () => {
-  const state = C.createGoalState('ship', '', 1);
-  const result = C.applyEvaluation(state, verdict({ complete: true, missing: [] }), 2, 'final', 2);
-  assert.equal(result.state.status, 'complete'); assert.equal(state.status, 'active'); assert.equal(result.state.iteration, 0);
-  for (const v of [verdict({ needsReview: true }), verdict({ confidence: 0.2 })]) {
-    const r = C.applyEvaluation(state, v, 2, 'review'); assert.equal(r.state.status, 'needs_review'); assert.equal(r.shouldContinue, false);
-  }
-});
-test('iteration cap allows exactly N acknowledged sends, not N evaluator calls', () => {
+test('done stops and not done continues regardless of iteration count', () => {
   const state = C.createGoalState('ship');
-  assert.equal(C.applyEvaluation({ ...state, iteration: 1 }, verdict(), 2, 'a').shouldContinue, true);
-  const limited = C.applyEvaluation({ ...state, iteration: 2 }, verdict(), 2, 'b');
-  assert.equal(limited.state.status, 'blocked'); assert.equal(limited.shouldContinue, false);
-  assert.match(C.applyEvaluation(state, verdict(), 2, 'c').continuation, /Your task:\nship/);
+  assert.equal(C.applyEvaluation(state, verdict({is_goal_done:true}), 'done').state.status, 'complete');
+  const result = C.applyEvaluation({...state, iteration:100}, verdict(), 'unfinished');
+  assert.equal(result.shouldContinue, true);
+  assert.equal(state.status, 'active');
 });
 test('continuations use the exact translated template with the original multiline goal', () => {
   const state = C.createGoalState('Implement the feature\nand verify the result.');
-  const result = C.applyEvaluation(state, verdict(), 2, 'a');
+  const result = C.applyEvaluation(state, verdict(), 'a');
   const expected = [
     'You are working in a fully automated environment, and you must complete the task entirely on your own if the message was preceded by /goal.',
     'Your task:\nImplement the feature\nand verify the result.',
@@ -44,7 +36,7 @@ test('continuations use the exact translated template with the original multilin
   ].join('\n\n');
   assert.equal(result.shouldContinue, true);
   assert.equal(result.continuation, expected);
-  assert.equal(C.applyEvaluation(state, verdict({ missing: [], reason: 'Different feedback' }), 2, 'b').continuation, expected);
+  assert.equal(C.applyEvaluation(state, verdict({ short_explanation: 'Different feedback' }), 'b').continuation, expected);
 });
 test('fingerprints distinguish repeated text in different turns and image-only responses', () => {
   assert.notEqual(C.turnFingerprint(turn(2)), C.turnFingerprint(turn(4)));
@@ -61,5 +53,5 @@ test('history preserves virtualized turns and strips unrelated pre-goal content'
 });
 test('normalization never upgrades unknown roles or artifact metadata into evidence', () => {
   assert.equal(C.normalizeTurn(turn(1, 'tool')), null);
-  assert.equal(C.normalizeTurn({...turn(1), artifacts: [{kind: 'image', name: 'test', verified: true}]}).artifacts[0].verified, false);
+  assert.deepEqual(C.normalizeTurn({...turn(1), artifacts: [{kind: 'image', name: 'test', data:'data:image/png;base64,AAAA'}]}).artifacts[0], {kind:'image', name:'test', data:'data:image/png;base64,AAAA'});
 });

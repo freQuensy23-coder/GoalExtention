@@ -26,15 +26,11 @@
     return turn ? fingerprintText(JSON.stringify([turn.index, turn.id, turn.role, turn.text, turn.artifacts || []])) : '';
   }
   function normalizeEvaluation(raw) {
-    if (!raw || typeof raw.complete !== 'boolean' || typeof raw.reason !== 'string' ||
-        !Array.isArray(raw.missing) || raw.missing.some(s => typeof s !== 'string') ||
-        typeof raw.confidence !== 'number' || !Number.isFinite(raw.confidence) || raw.confidence < 0 || raw.confidence > 1 ||
-        typeof raw.needsReview !== 'boolean') throw new Error('Invalid evaluator verdict.');
-    if (raw.complete && (raw.missing.length || raw.needsReview)) throw new Error('Contradictory evaluator verdict.');
-    return { complete: raw.complete, reason: raw.reason.trim().slice(0, 2000),
-      missing: raw.missing.map(s => s.trim().slice(0, 1000)).filter(Boolean).slice(0, 12),
-      confidence: raw.confidence, needsReview: raw.needsReview };
+    if (!raw || typeof raw.is_goal_done !== 'boolean' || typeof raw.short_explanation !== 'string' ||
+        Object.keys(raw).length !== 2) throw new Error('Invalid evaluator verdict.');
+    return { short_explanation: raw.short_explanation, is_goal_done: raw.is_goal_done };
   }
+
   function buildContinuationPrompt(objective) {
     return [
       'You are working in a fully automated environment, and you must complete the task entirely on your own if the message was preceded by /goal.',
@@ -49,14 +45,11 @@
       createdAt: now, updatedAt: now, lastEvaluatedFingerprint: baselineFingerprint,
       lastEvaluation: null, lastError: null, history: [], pending: null };
   }
-  // maxIterations counts acknowledged sends, not evaluator calls.
-  function applyEvaluation(state, evaluation, maxIterations, fingerprint, now = Date.now()) {
+  function applyEvaluation(state, evaluation, fingerprint, now = Date.now()) {
     const e = normalizeEvaluation(evaluation);
     const next = { ...state, lastEvaluation: e, lastEvaluatedFingerprint: fingerprint, updatedAt: now, lastError: null };
     let continuation = null;
-    if (e.needsReview || e.confidence < 0.75) next.status = 'needs_review';
-    else if (e.complete) next.status = 'complete';
-    else if (state.iteration >= maxIterations) { next.status = 'blocked'; next.lastError = 'Maximum continuation iterations reached.'; }
+    if (e.is_goal_done) next.status = 'complete';
     else continuation = buildContinuationPrompt(state.objective);
     return { state: next, shouldContinue: Boolean(continuation), continuation };
   }
@@ -64,7 +57,9 @@
     if (!t || !['user', 'assistant'].includes(t.role) || !Number.isInteger(t.index) || t.index < 1 || typeof t.id !== 'string' || !t.id) return null;
     return { id: t.id.slice(0, 200), index: t.index, role: t.role, text: String(t.text || ''),
       complete: t.complete === true, artifacts: (Array.isArray(t.artifacts) ? t.artifacts : []).slice(0, 20).map(a => ({
-        kind: a.kind === 'image' ? 'image' : 'file', name: String(a.name || '').slice(0, 200), verified: false,
+        kind: a.kind === 'image' ? 'image' : 'file', name: String(a.name || '').slice(0, 200),
+        ...(typeof a.url === 'string' ? { url: a.url } : {}),
+        ...(typeof a.data === 'string' ? { data: a.data } : {}),
       })) };
   }
   function mergeHistory(previous, visible, anchorIndex) {

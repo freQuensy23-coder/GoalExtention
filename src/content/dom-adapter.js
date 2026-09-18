@@ -13,6 +13,7 @@
   });
   function createAdapter(doc = document, { getUrl = () => doc.defaultView.location.href } = {}) {
     const win = doc.defaultView;
+    const attachmentCache = new Map();
     const root = () => doc.querySelector('main#main, main');
     function visible(el) {
       if (!el?.isConnected || el.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
@@ -62,16 +63,52 @@
           img.currentSrc || img.getAttribute('src') || img;
         if (alt && !images.has(identity)) {
           images.add(identity);
-          items.push({ kind: 'image', name: alt.slice(0, 200), verified: false });
+          items.push({ kind: 'image', name: alt.slice(0, 200), url: img.currentSrc || img.getAttribute('src') || '' });
         }
       }
       for (const el of turn.querySelectorAll('button[aria-label], a[href]')) {
         const label = el.getAttribute('aria-label') || el.textContent;
         const name = label?.match(/([^\s/\\]+\.(?:txt|json|csv|pdf|docx?|xlsx?|pptx?|zip|md|py|js|html))\b/i)?.[1];
-        if (name && !files.has(name)) { files.add(name); items.push({ kind: 'file', name, verified: false }); }
+        if (name && !files.has(name)) {
+          files.add(name);
+          items.push({ kind: 'file', name, url: el.tagName === 'A' ? el.href : '' });
+        }
       }
-      // Source URLs and DOM identities stay local; only unverified labels leave the adapter.
       return items;
+    }
+    async function prepareTranscript(turns, count = 20) {
+      const recent = turns.slice(-Math.max(1, Math.min(100, count)));
+      let total = 0;
+      const result = [];
+      for (const turn of recent) {
+        const artifacts = [];
+        for (const artifact of turn.artifacts) {
+          let data = artifact.data || attachmentCache.get(artifact.url);
+          if (!data) {
+            if (!artifact.url) throw new Error(`Attachment has no readable download: ${artifact.name}`);
+            const url = new URL(artifact.url, getUrl());
+            if (!['https:', 'blob:', 'data:'].includes(url.protocol)) throw new Error('Unsupported attachment URL.');
+            const response = await win.fetch(url.href, { credentials: 'same-origin', signal: AbortSignal.timeout(15000) });
+            if (!response.ok) throw new Error(`Could not load attachment: ${artifact.name}`);
+            const blob = await response.blob();
+            if (blob.size > 4 * 1024 * 1024) throw new Error(`Attachment exceeds 4 MB: ${artifact.name}`);
+            if (artifact.kind === 'image' && !blob.type.startsWith('image/')) throw new Error('Image download returned non-image content.');
+            data = await new Promise((resolve, reject) => {
+              const reader = new win.FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(new Error('Could not read attachment.'));
+              reader.readAsDataURL(blob);
+            });
+            attachmentCache.set(artifact.url, data);
+            if (attachmentCache.size > 100) attachmentCache.delete(attachmentCache.keys().next().value);
+          }
+          total += data.length;
+          if (total > 6 * 1024 * 1024) throw new Error('Attachments exceed 6 MB. Reduce the recent-message count.');
+          artifacts.push({ ...artifact, data });
+        }
+        result.push({ ...turn, artifacts });
+      }
+      return result;
     }
     function collectMessages() {
       return [...(root()?.querySelectorAll(SELECTORS.turn) || [])].flatMap(turn => {
@@ -146,7 +183,7 @@
       }, timeoutMs);
     }
     return { getComposer, getComposerText, findSendButton, setComposerText, isGenerating, hasDraft,
-      collectMessages, snapshot, sendMessage, interactionBlocked,
+      collectMessages, snapshot, sendMessage, interactionBlocked, prepareTranscript,
       latestAssistantText: () => collectMessages().filter(t => t.role === 'assistant').at(-1)?.text || '' };
   }
   return { SELECTORS, createAdapter };

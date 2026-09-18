@@ -79,7 +79,7 @@ class DomEvidenceRegressions(unittest.TestCase):
         }''', IMAGE)
         artifacts = self.page.evaluate('adapter.collectMessages()[0].artifacts')
         self.assertEqual(len(artifacts), 2)
-        self.assertTrue(all(a == {'kind':'image','name':'Generated image','verified':False} for a in artifacts))
+        self.assertTrue(all(a['kind'] == 'image' and a['name'] == 'Generated image' and 'url' in a for a in artifacts))
 
     def test_repeated_layers_without_holder_share_source_identity(self):
         self.page.evaluate('''src => {
@@ -90,3 +90,19 @@ class DomEvidenceRegressions(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+from test_browser import ChromiumCase
+
+class AttachmentContentTests(ChromiumCase):
+    def test_image_bytes_and_pdf_bytes_are_loaded_from_the_message(self):
+        self.load()
+        result=self.page.evaluate('''async () => {
+          const png='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==';
+          const pdf='data:application/pdf;base64,JVBERi0xLjQ=';
+          document.querySelector('main').innerHTML='<section data-testid="conversation-turn-1" data-turn="user"><div data-message-author-role="user" data-message-id="a"><img alt="Diagram" src="'+png+'"><a href="'+pdf+'">report.pdf</a></div></section>';
+          return await dom.prepareTranscript(dom.collectMessages());
+        }''')
+        artifacts=result[0]['artifacts']
+        self.assertEqual(len(artifacts),2)
+        self.assertTrue(artifacts[0]['data'].startswith('data:image/png;base64,'))
+        self.assertTrue(artifacts[1]['data'].startswith('data:application/pdf;base64,'))

@@ -1,1 +1,19 @@
-{"name":"chatgpt-goal","version":"0.2.0","private":true,"license":"GPL-3.0-only","description":"Goal loop for the ChatGPT web UI","scripts":{"test":"node --test tests/*.test.js","test:browser":"python3 -m unittest discover -s tests/browser -p 'test_*.py' -v","test:privacy":"python3 scripts/audit-public-capture.py","test:native":"python3 scripts/smoke-extension.py && python3 scripts/smoke-native-goal-loop.py","check":"node scripts/check.mjs","build":"node scripts/build.mjs","ci":"npm run check && npm run test:privacy && npm test && npm run build && npm run test:browser && npm run test:native"},"engines":{"node":">=22"}}
+{
+  "name": "chatgpt-goal",
+  "version": "0.3.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "description": "Goal loop for the ChatGPT web UI",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:browser": "python3 -m unittest discover -s tests/browser -p 'test_*.py' -v",
+    "test:privacy": "python3 scripts/audit-public-capture.py",
+    "test:native": "python3 scripts/smoke-extension.py && python3 scripts/smoke-native-goal-loop.py",
+    "check": "node scripts/check.mjs",
+    "build": "node scripts/build.mjs",
+    "ci": "npm run check && npm run test:privacy && npm test && npm run build && npm run test:browser && npm run test:native"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

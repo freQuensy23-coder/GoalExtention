@@ -14,7 +14,7 @@ with sync_playwright() as playwright, tempfile.TemporaryDirectory() as profile:
     )
     try:
         worker = context.service_workers[0] if context.service_workers else context.wait_for_event('serviceworker', timeout=15000)
-        assert worker.evaluate('chrome.runtime.getManifest().version') == '0.2.0'
+        assert worker.evaluate('chrome.runtime.getManifest().version') == '0.3.0'
         assert worker.evaluate('ready.then(() => typeof service.handleMessage)') == 'function'
         extension_id = worker.url.split('/')[2]
         page = context.new_page()
@@ -28,20 +28,20 @@ with sync_playwright() as playwright, tempfile.TemporaryDirectory() as profile:
         page.locator('#api-key').fill('offline-test-key')
         page.evaluate('''() => { globalThis.fetch = async (url, init) => {
           const request = JSON.parse(init.body);
-          if (JSON.parse(request.input[1].content).goal !== 'Reply with exactly: CONNECTION_OK')
+          if (JSON.parse(request.input[1].content[0].text).goal !== 'Describe the attached image as a red square.' || !request.input[1].content.some(part => part.type === 'input_image' && part.image_url.startsWith('data:image/png;base64,')))
             throw new Error('Unexpected test goal');
           return new Response(JSON.stringify({output_text: JSON.stringify({
-            complete: true, reason: 'Synthetic reply matches', missing: [], confidence: 1, needsReview: false
+            is_goal_done: true, short_explanation: 'Synthetic reply matches'
           })}), {status: 200});
         }; }''')
         page.locator('#test-connection').click()
         page.wait_for_function("() => document.querySelector('#status').textContent.startsWith('Connection verified:')")
         page.locator('#model').fill('test-model')
-        page.locator('#max-iterations').fill('3')
+        page.locator('#history-messages').fill('3')
         page.locator('button[type=submit]').click()
         page.wait_for_function("() => document.querySelector('#status').textContent === 'Saved.'")
         saved = worker.evaluate("chrome.storage.local.get('chatgptGoal.settings')")['chatgptGoal.settings']
-        assert saved['model'] == 'test-model' and saved['maxIterations'] == 3
+        assert saved['model'] == 'test-model' and saved['historyMessages'] == 3
         page.reload()
         page.wait_for_function("() => document.querySelector('#model').value === 'test-model'")
         print('Native MV3 worker registration, imports, storage access and options save passed.')

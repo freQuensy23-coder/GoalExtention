@@ -25,7 +25,7 @@ function render(goal) {
     return;
   }
   summary.textContent = `${goal.status} · sent ${goal.iteration}: ${goal.objective}` +
-    (goal.lastError ? `\n${goal.lastError}` : goal.status === 'needs_review' && goal.lastEvaluation ? `\n${goal.lastEvaluation.reason}` : '');
+    (goal.lastError ? `\n${goal.lastError}` : goal.lastEvaluation ? `\n${goal.lastEvaluation.short_explanation}` : '');
   controls.hidden = false;
   toggle.textContent = goal.status === "paused" ? "Resume" : "Pause";
   toggle.disabled = !["active", "paused"].includes(goal.status);
@@ -45,6 +45,7 @@ async function refresh() {
     return;
   }
   render(response && response.goal);
+  if (response.goal?.status === 'active' && response.waiting) summary.textContent += `\n${response.waiting}`;
 }
 
 toggle.addEventListener("click", async () => {
