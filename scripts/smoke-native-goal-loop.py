@@ -17,7 +17,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 EXTENSION = str(ROOT / "dist")
-CHAT_URL = "https://chatgpt.com/c/native-offline-demo"
+CHAT_URL = "https://chatgpt.com/"
 
 CHAT_HTML = r'''<!doctype html>
 <meta charset="utf-8">
@@ -65,6 +65,10 @@ CHAT_HTML = r'''<!doctype html>
     const value = text();
     if (!value || send.disabled) return;
     window.nativeSubmissions.push(value);
+    if (window.nativeSubmissions.length === 1) {
+      history.pushState({}, '', '/c/WEB:pending');
+      setTimeout(() => history.replaceState({}, '', '/c/native-offline-demo'), 200);
+    }
     addTurn('user', value, false);
     editor.replaceChildren(document.createElement('p'));
     editor.firstChild.append(document.createElement('br'));
@@ -134,7 +138,7 @@ with sync_playwright() as playwright, tempfile.TemporaryDirectory() as profile:
         # Content scripts run at document_idle in an isolated world. Give the real
         # extension listener a deterministic chance to attach before the first submit.
         page.wait_for_timeout(750)
-        page.locator("#prompt-textarea").fill("/goal finish the offline native smoke test")
+        page.locator("#prompt-textarea").fill("/goal \n\nfinish the offline native smoke test")
         page.locator('[data-testid="send-button"]').click()
 
         wait_goal(worker, lambda goal: goal.get("status") == "active")
@@ -143,7 +147,7 @@ with sync_playwright() as playwright, tempfile.TemporaryDirectory() as profile:
         judge_calls = worker.evaluate("globalThis.__nativeJudgeCalls")
 
         assert len(submissions) == 2, submissions
-        assert submissions[0].startswith("/goal ")
+        assert submissions[0].split() == ['/goal', 'finish', 'the', 'offline', 'native', 'smoke', 'test']
         assert "You are working in a fully automated environment" in submissions[1]
         assert "Your task:\nfinish the offline native smoke test" in submissions[1]
         assert judge_calls == 2, judge_calls

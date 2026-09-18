@@ -15,7 +15,19 @@ const service = ChatgptGoalService.createService({
   evaluate: args => ChatgptGoalEvaluator.evaluateGoal(args),
 });
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  ready.then(() => service.handleMessage(message, sender)).then(sendResponse)
+  ready.then(async () => {
+    // sender.url can retain the document's original URL across pushState.
+    // Authenticate the original sender, then use the browser's current tab URL.
+    if (sender.frameId !== 0 || !Number.isInteger(sender.tab?.id) ||
+        !/^https:\/\/(chatgpt\.com|chat\.openai\.com)\//.test(sender.url || '')) {
+      throw new Error('Only top-level ChatGPT content scripts can drive a goal.');
+    }
+    const tab = await chrome.tabs.get(sender.tab.id);
+    if (new URL(tab.url).origin !== new URL(sender.url).origin) {
+      throw new Error('Conversation changed or is not ready.');
+    }
+    return service.handleMessage(message, { ...sender, url: tab.url });
+  }).then(sendResponse)
     .catch(error => sendResponse({ ok: false, error: error.message }));
   return true;
 });
