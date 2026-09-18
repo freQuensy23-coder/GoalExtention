@@ -49,7 +49,9 @@
       }
       if (pendingGoal && Date.now() - pendingGoal.createdAt > 30000) pendingGoal = null;
       if (pendingGoal && snapshot.threadKey) {
-        const anchor = snapshot.turns.find(t => t.role === 'user' && t.index > pendingGoal.afterIndex && !pendingGoal.previousIds.includes(t.id) && t.text.trim() === pendingGoal.raw);
+        // The editor and the rendered message can represent the whitespace after
+        // /goal differently. Compare the parsed objective, preserving its content.
+        const anchor = snapshot.turns.find(t => t.role === 'user' && t.index > pendingGoal.afterIndex && !pendingGoal.previousIds.includes(t.id) && Core.parseGoalCommand(t.text)?.objective === pendingGoal.objective);
         if (anchor) {
           const pending = pendingGoal; pendingGoal = null;
           const result = await runtime({ type: 'CG_SET_GOAL', objective: pending.objective, anchor });

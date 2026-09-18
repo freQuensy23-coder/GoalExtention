@@ -39,6 +39,11 @@ async function refresh() {
     return;
   }
   const response = await sendToTab("CG_POPUP_STATUS");
+  if (!response?.ok) {
+    summary.textContent = `Could not read goal status. Reload the ChatGPT tab. ${response?.error || ''}`;
+    controls.hidden = true;
+    return;
+  }
   render(response && response.goal);
 }
 

@@ -195,11 +195,22 @@ class ControllerTests(ChromiumCase):
         self.page.wait_for_function("goalData['chatgptGoal.tab.1']?.status==='active'")
     def append_answer(self,complete=True):
         self.page.evaluate('(html)=>document.querySelector("main").insertAdjacentHTML("beforeend",html)',turn(2,complete=complete))
+    def test_new_chat_multiline_command_prefix_whitespace(self):
+        self.start_controller()
+        self.page.evaluate("testUrl='https://chatgpt.com/'; ChatgptGoalController.tick()")
+        self.page.locator('#prompt-textarea').fill('/goal \n\nship')
+        self.page.locator('[data-testid="send-button"]').click()
+        self.page.evaluate(r"""() => {
+          document.querySelector('[data-message-author-role=user]').textContent='/goal\nship';
+          testUrl='https://chatgpt.com/c/new-chat';
+        }""")
+        self.page.wait_for_function("goalData['chatgptGoal.tab.1']?.status==='active'")
+        self.assertEqual(self.page.evaluate("goalData['chatgptGoal.tab.1'].objective"),'ship')
     def test_automatic_full_roundtrip_uses_real_controller_service_and_dom(self):
         self.start_controller();self.send_goal();self.append_answer()
         self.page.wait_for_function("goalData['chatgptGoal.tab.1']?.iteration===1",timeout=7000)
         self.assertEqual(len(self.page.evaluate('submissions')),2)
-        self.assertIn('Run tests',self.page.evaluate('submissions[1]'))
+        self.assertIn('Your task:\nship',self.page.evaluate('submissions[1]'))
         self.page.wait_for_timeout(2000)
         self.assertEqual(self.page.evaluate('requests.length'),1)
     def test_stable_partial_response_without_stop_is_not_evaluated(self):
